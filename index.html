@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio-Reactive Particle System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        #controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 350px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        #controls.hidden {
+            transform: translateX(400px);
+        }
+
+        #controls::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #controls::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #controls::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #4fc3f7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+            accent-color: #4fc3f7;
+        }
+
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        button.success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .value-display {
+            display: inline-block;
+            float: right;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        #toggleControls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            width: 50px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.active {
+            background: #4caf50;
+            box-shadow: 0 0 10px #4caf50;
+        }
+
+        .status-indicator.inactive {
+            background: #f44336;
+        }
+
+        #midiLearnIndicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(102, 126, 234, 0.95);
+            padding: 30px 50px;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            display: none;
+            z-index: 2000;
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.8);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .info-text {
+            font-size: 11px;
+            color: #888;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        #stats {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+
+        #stats.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <button id="toggleControls">☰</button>
+
+    <div id="controls">
+        <!-- Audio Section -->
+        <div class="control-section">
+            <h2>
+                <span class="status-indicator" id="audioStatus"></span>
+                Audio Input
+            </h2>
+            <button id="startMic" class="success">Start Microphone</button>
+            <label>Or Load Audio File:</label>
+            <input type="file" id="audioFile" accept="audio/*">
+            <button id="stopAudio" class="danger">Stop Audio</button>
+        </div>
+
+        <!-- MIDI Section -->
+        <div class="control-section">
+            <h2>
+                <span class="status-indicator" id="midiStatus"></span>
+                MIDI Control
+            </h2>
+            <button id="initMidi">Initialize MIDI</button>
+            <button id="createDefaultMappings" class="secondary">Create Default Mappings</button>
+            <div class="info-text">Click "MIDI Learn" buttons to map MIDI CC to parameters</div>
+        </div>
+
+        <!-- Particle Emission -->
+        <div class="control-section">
+            <h2>Particle Emission</h2>
+
+            <label>Emission Rate: <span class="value-display" id="emissionRateVal">10</span></label>
+            <input type="range" id="emissionRate" min="0" max="50" value="10" step="1">
+
+            <label>Velocity: <span class="value-display" id="velocityVal">1-3</span></label>
+            <input type="range" id="velocityMin" min="0.1" max="10" value="1" step="0.1">
+            <input type="range" id="velocityMax" min="0.1" max="10" value="3" step="0.1">
+
+            <label>Size: <span class="value-display" id="sizeVal">2-6</span></label>
+            <input type="range" id="sizeMin" min="1" max="20" value="2" step="0.5">
+            <input type="range" id="sizeMax" min="1" max="20" value="6" step="0.5">
+
+            <label>Lifetime: <span class="value-display" id="lifeVal">100-200</span></label>
+            <input type="range" id="lifeMin" min="10" max="1000" value="100" step="10">
+            <input type="range" id="lifeMax" min="10" max="1000" value="200" step="10">
+        </div>
+
+        <!-- Physics -->
+        <div class="control-section">
+            <h2>Physics</h2>
+
+            <label>Physics Mode:</label>
+            <select id="physicsMode">
+                <option value="gravity">Gravity</option>
+                <option value="magnetism">Magnetism</option>
+                <option value="turbulence">Turbulence</option>
+                <option value="orbital">Orbital</option>
+            </select>
+
+            <label>Gravity Y: <span class="value-display" id="gravityVal">0.1</span></label>
+            <input type="range" id="gravity" min="-0.5" max="0.5" value="0.1" step="0.01">
+
+            <label>Magnetism: <span class="value-display" id="magnetismVal">0.5</span></label>
+            <input type="range" id="magnetism" min="0" max="2" value="0.5" step="0.05">
+
+            <label>Turbulence: <span class="value-display" id="turbulenceVal">0.3</span></label>
+            <input type="range" id="turbulence" min="0" max="1" value="0.3" step="0.05">
+
+            <label>Damping: <span class="value-display" id="dampingVal">0.99</span></label>
+            <input type="range" id="damping" min="0.9" max="1" value="0.99" step="0.01">
+        </div>
+
+        <!-- Visuals -->
+        <div class="control-section">
+            <h2>Visuals</h2>
+
+            <label>Color Palette:</label>
+            <select id="colorPalette">
+                <option value="rainbow">Rainbow</option>
+                <option value="fire">Fire</option>
+                <option value="ice">Ice</option>
+                <option value="purple">Purple</option>
+                <option value="green">Green</option>
+                <option value="monochrome">Monochrome</option>
+            </select>
+
+            <label>Blend Mode:</label>
+            <select id="blendMode">
+                <option value="screen">Screen</option>
+                <option value="add">Add (Lighter)</option>
+                <option value="normal">Normal</option>
+                <option value="multiply">Multiply</option>
+                <option value="overlay">Overlay</option>
+            </select>
+
+            <label>Particle Shape:</label>
+            <select id="particleShape">
+                <option value="circle">Circle</option>
+                <option value="square">Square</option>
+                <option value="triangle">Triangle</option>
+                <option value="glow">Glow</option>
+            </select>
+
+            <label>Trail Intensity: <span class="value-display" id="trailVal">0.9</span></label>
+            <input type="range" id="trailIntensity" min="0" max="1" value="0.9" step="0.05">
+
+            <label>Glow Intensity: <span class="value-display" id="glowVal">2</span></label>
+            <input type="range" id="glowIntensity" min="0" max="5" value="2" step="0.5">
+        </div>
+
+        <!-- Audio Reactivity -->
+        <div class="control-section">
+            <h2>Audio Reactivity</h2>
+
+            <label>Emission Multiplier: <span class="value-display" id="audioEmissionVal">1.0</span></label>
+            <input type="range" id="audioEmission" min="0" max="5" value="1.0" step="0.1">
+
+            <label>Size Multiplier: <span class="value-display" id="audioSizeVal">1.0</span></label>
+            <input type="range" id="audioSize" min="0" max="3" value="1.0" step="0.1">
+
+            <label>Velocity Multiplier: <span class="value-display" id="audioVelocityVal">1.0</span></label>
+            <input type="range" id="audioVelocity" min="0" max="3" value="1.0" step="0.1">
+
+            <label>Kick Threshold: <span class="value-display" id="kickThresholdVal">0.7</span></label>
+            <input type="range" id="kickThreshold" min="0" max="1" value="0.7" step="0.05">
+        </div>
+
+        <!-- Presets -->
+        <div class="control-section">
+            <h2>Presets</h2>
+            <button id="loadDefault">Load Default</button>
+            <button id="loadAggressive">Load Aggressive</button>
+            <button id="loadAmbient">Load Ambient</button>
+            <button id="savePreset" class="secondary">Save Custom Preset</button>
+            <input type="file" id="loadPresetFile" accept=".json" style="display:none;">
+            <button id="loadPresetBtn" class="secondary">Load Custom Preset</button>
+        </div>
+
+        <!-- Actions -->
+        <div class="control-section">
+            <h2>Actions</h2>
+            <div class="button-group">
+                <button id="fullscreen">Fullscreen</button>
+                <button id="screenshot" class="secondary">Screenshot</button>
+            </div>
+            <div class="button-group">
+                <button id="toggleStats" class="secondary">Toggle Stats</button>
+                <button id="clearParticles" class="danger">Clear Particles</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="midiLearnIndicator">
+        🎹 MIDI LEARN MODE<br>
+        <span style="font-size: 14px;">Move a control on your MIDI device</span>
+    </div>
+
+    <div id="stats">
+        <div id="statsContent"></div>
+    </div>
+
+    <script type="module">
+        import AudioEngine from './js/audio-engine.js';
+        import ParticleSystem from './js/particle-system.js';
+        import Renderer from './js/renderer.js';
+        import MIDIController from './js/midi-controller.js';
+        import { downloadJSON, loadJSONFile, toggleFullscreen, getMousePos } from './js/utils.js';
+
+        // Initialize components
+        const canvas = document.getElementById('canvas');
+        const renderer = new Renderer(canvas);
+        const particleSystem = new ParticleSystem(1000);
+        const audioEngine = new AudioEngine();
+        const midiController = new MIDIController();
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            renderer.setSize(canvas.width, canvas.height);
+            particleSystem.setDimensions(canvas.width, canvas.height);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // UI Elements
+        const elements = {
+            audioStatus: document.getElementById('audioStatus'),
+            midiStatus: document.getElementById('midiStatus'),
+            startMic: document.getElementById('startMic'),
+            audioFile: document.getElementById('audioFile'),
+            stopAudio: document.getElementById('stopAudio'),
+            initMidi: document.getElementById('initMidi'),
+            createDefaultMappings: document.getElementById('createDefaultMappings'),
+            emissionRate: document.getElementById('emissionRate'),
+            velocityMin: document.getElementById('velocityMin'),
+            velocityMax: document.getElementById('velocityMax'),
+            sizeMin: document.getElementById('sizeMin'),
+            sizeMax: document.getElementById('sizeMax'),
+            lifeMin: document.getElementById('lifeMin'),
+            lifeMax: document.getElementById('lifeMax'),
+            physicsMode: document.getElementById('physicsMode'),
+            gravity: document.getElementById('gravity'),
+            magnetism: document.getElementById('magnetism'),
+            turbulence: document.getElementById('turbulence'),
+            damping: document.getElementById('damping'),
+            colorPalette: document.getElementById('colorPalette'),
+            blendMode: document.getElementById('blendMode'),
+            particleShape: document.getElementById('particleShape'),
+            trailIntensity: document.getElementById('trailIntensity'),
+            glowIntensity: document.getElementById('glowIntensity'),
+            audioEmission: document.getElementById('audioEmission'),
+            audioSize: document.getElementById('audioSize'),
+            audioVelocity: document.getElementById('audioVelocity'),
+            kickThreshold: document.getElementById('kickThreshold'),
+            toggleControls: document.getElementById('toggleControls'),
+            controls: document.getElementById('controls'),
+            fullscreen: document.getElementById('fullscreen'),
+            screenshot: document.getElementById('screenshot'),
+            toggleStats: document.getElementById('toggleStats'),
+            clearParticles: document.getElementById('clearParticles'),
+            stats: document.getElementById('stats'),
+            loadDefault: document.getElementById('loadDefault'),
+            loadAggressive: document.getElementById('loadAggressive'),
+            loadAmbient: document.getElementById('loadAmbient'),
+            savePreset: document.getElementById('savePreset'),
+            loadPresetBtn: document.getElementById('loadPresetBtn'),
+            loadPresetFile: document.getElementById('loadPresetFile')
+        };
+
+        // Audio controls
+        elements.startMic.addEventListener('click', async () => {
+            const success = await audioEngine.startMicrophone();
+            if (success) {
+                elements.audioStatus.classList.add('active');
+                await audioEngine.resume();
+            }
+        });
+
+        elements.audioFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const success = await audioEngine.loadFile(file);
+                if (success) {
+                    elements.audioStatus.classList.add('active');
+                    await audioEngine.resume();
+                }
+            }
+        });
+
+        elements.stopAudio.addEventListener('click', () => {
+            audioEngine.stop();
+            elements.audioStatus.classList.remove('active');
+        });
+
+        // MIDI controls
+        elements.initMidi.addEventListener('click', async () => {
+            const success = await midiController.init();
+            if (success) {
+                elements.midiStatus.classList.add('active');
+            }
+        });
+
+        elements.createDefaultMappings.addEventListener('click', () => {
+            midiController.createDefaultMappings(particleSystem, renderer);
+            alert('Default MIDI mappings created!');
+        });
+
+        // Particle emission controls
+        elements.emissionRate.addEventListener('input', (e) => {
+            particleSystem.emission.rate = parseFloat(e.target.value);
+            document.getElementById('emissionRateVal').textContent = e.target.value;
+        });
+
+        elements.velocityMin.addEventListener('input', (e) => {
+            particleSystem.emission.velocityMin = parseFloat(e.target.value);
+            updateVelocityDisplay();
+        });
+
+        elements.velocityMax.addEventListener('input', (e) => {
+            particleSystem.emission.velocityMax = parseFloat(e.target.value);
+            updateVelocityDisplay();
+        });
+
+        function updateVelocityDisplay() {
+            document.getElementById('velocityVal').textContent =
+                `${elements.velocityMin.value}-${elements.velocityMax.value}`;
+        }
+
+        elements.sizeMin.addEventListener('input', (e) => {
+            particleSystem.emission.sizeMin = parseFloat(e.target.value);
+            updateSizeDisplay();
+        });
+
+        elements.sizeMax.addEventListener('input', (e) => {
+            particleSystem.emission.sizeMax = parseFloat(e.target.value);
+            updateSizeDisplay();
+        });
+
+        function updateSizeDisplay() {
+            document.getElementById('sizeVal').textContent =
+                `${elements.sizeMin.value}-${elements.sizeMax.value}`;
+        }
+
+        elements.lifeMin.addEventListener('input', (e) => {
+            particleSystem.emission.lifeMin = parseFloat(e.target.value);
+            updateLifeDisplay();
+        });
+
+        elements.lifeMax.addEventListener('input', (e) => {
+            particleSystem.emission.lifeMax = parseFloat(e.target.value);
+            updateLifeDisplay();
+        });
+
+        function updateLifeDisplay() {
+            document.getElementById('lifeVal').textContent =
+                `${elements.lifeMin.value}-${elements.lifeMax.value}`;
+        }
+
+        // Physics controls
+        elements.physicsMode.addEventListener('change', (e) => {
+            particleSystem.setPhysicsMode(e.target.value);
+        });
+
+        elements.gravity.addEventListener('input', (e) => {
+            particleSystem.physics.gravityY = parseFloat(e.target.value);
+            document.getElementById('gravityVal').textContent = e.target.value;
+        });
+
+        elements.magnetism.addEventListener('input', (e) => {
+            particleSystem.physics.magnetismStrength = parseFloat(e.target.value);
+            document.getElementById('magnetismVal').textContent = e.target.value;
+        });
+
+        elements.turbulence.addEventListener('input', (e) => {
+            particleSystem.physics.turbulenceStrength = parseFloat(e.target.value);
+            document.getElementById('turbulenceVal').textContent = e.target.value;
+        });
+
+        elements.damping.addEventListener('input', (e) => {
+            particleSystem.physics.damping = parseFloat(e.target.value);
+            document.getElementById('dampingVal').textContent = e.target.value;
+        });
+
+        // Visual controls
+        elements.colorPalette.addEventListener('change', (e) => {
+            renderer.setColorPalette(e.target.value);
+        });
+
+        elements.blendMode.addEventListener('change', (e) => {
+            renderer.setBlendMode(e.target.value);
+        });
+
+        elements.particleShape.addEventListener('change', (e) => {
+            renderer.params.particleShape = e.target.value;
+        });
+
+        elements.trailIntensity.addEventListener('input', (e) => {
+            renderer.setTrailIntensity(parseFloat(e.target.value));
+            document.getElementById('trailVal').textContent = e.target.value;
+        });
+
+        elements.glowIntensity.addEventListener('input', (e) => {
+            renderer.params.glowIntensity = parseFloat(e.target.value);
+            document.getElementById('glowVal').textContent = e.target.value;
+        });
+
+        // Audio reactivity controls
+        elements.audioEmission.addEventListener('input', (e) => {
+            particleSystem.audioReactive.emissionMultiplier = parseFloat(e.target.value);
+            document.getElementById('audioEmissionVal').textContent = e.target.value;
+        });
+
+        elements.audioSize.addEventListener('input', (e) => {
+            particleSystem.audioReactive.sizeMultiplier = parseFloat(e.target.value);
+            document.getElementById('audioSizeVal').textContent = e.target.value;
+        });
+
+        elements.audioVelocity.addEventListener('input', (e) => {
+            particleSystem.audioReactive.velocityMultiplier = parseFloat(e.target.value);
+            document.getElementById('audioVelocityVal').textContent = e.target.value;
+        });
+
+        elements.kickThreshold.addEventListener('input', (e) => {
+            audioEngine.setKickThreshold(parseFloat(e.target.value));
+            document.getElementById('kickThresholdVal').textContent = e.target.value;
+        });
+
+        // UI controls
+        elements.toggleControls.addEventListener('click', () => {
+            elements.controls.classList.toggle('hidden');
+        });
+
+        elements.fullscreen.addEventListener('click', () => {
+            toggleFullscreen(document.documentElement);
+        });
+
+        elements.screenshot.addEventListener('click', () => {
+            renderer.takeScreenshot(`particle-system-${Date.now()}.png`);
+        });
+
+        elements.toggleStats.addEventListener('click', () => {
+            elements.stats.classList.toggle('visible');
+        });
+
+        elements.clearParticles.addEventListener('click', () => {
+            particleSystem.clear();
+        });
+
+        // Mouse interaction - move emission point
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e, canvas);
+            particleSystem.setEmissionPosition(pos.x / canvas.width, pos.y / canvas.height);
+            particleSystem.setMagnetPosition(pos.x, pos.y);
+        });
+
+        // Preset loading
+        elements.loadDefault.addEventListener('click', async () => {
+            const response = await fetch('./presets/default.json');
+            const preset = await response.json();
+            applyPreset(preset);
+        });
+
+        elements.loadAggressive.addEventListener('click', async () => {
+            const response = await fetch('./presets/aggressive.json');
+            const preset = await response.json();
+            applyPreset(preset);
+        });
+
+        elements.loadAmbient.addEventListener('click', async () => {
+            const response = await fetch('./presets/ambient.json');
+            const preset = await response.json();
+            applyPreset(preset);
+        });
+
+        elements.savePreset.addEventListener('click', () => {
+            const preset = getCurrentSettings();
+            downloadJSON(preset, `preset-${Date.now()}.json`);
+        });
+
+        elements.loadPresetBtn.addEventListener('click', () => {
+            elements.loadPresetFile.click();
+        });
+
+        elements.loadPresetFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const preset = await loadJSONFile(file);
+                applyPreset(preset);
+            }
+        });
+
+        function getCurrentSettings() {
+            return {
+                emission: { ...particleSystem.emission },
+                physics: { ...particleSystem.physics },
+                audioReactive: { ...particleSystem.audioReactive },
+                renderer: {
+                    blendMode: renderer.params.blendMode,
+                    colorPalette: renderer.params.colorPalette,
+                    particleShape: renderer.params.particleShape,
+                    backgroundAlpha: renderer.params.backgroundAlpha,
+                    glowIntensity: renderer.params.glowIntensity
+                }
+            };
+        }
+
+        function applyPreset(preset) {
+            // Apply emission settings
+            if (preset.emission) {
+                Object.assign(particleSystem.emission, preset.emission);
+                elements.emissionRate.value = preset.emission.rate;
+                elements.velocityMin.value = preset.emission.velocityMin;
+                elements.velocityMax.value = preset.emission.velocityMax;
+                elements.sizeMin.value = preset.emission.sizeMin;
+                elements.sizeMax.value = preset.emission.sizeMax;
+                elements.lifeMin.value = preset.emission.lifeMin;
+                elements.lifeMax.value = preset.emission.lifeMax;
+                updateVelocityDisplay();
+                updateSizeDisplay();
+                updateLifeDisplay();
+            }
+
+            // Apply physics settings
+            if (preset.physics) {
+                Object.assign(particleSystem.physics, preset.physics);
+                elements.physicsMode.value = preset.physics.mode;
+                elements.gravity.value = preset.physics.gravityY;
+                elements.magnetism.value = preset.physics.magnetismStrength;
+                elements.turbulence.value = preset.physics.turbulenceStrength;
+                elements.damping.value = preset.physics.damping;
+            }
+
+            // Apply audio reactive settings
+            if (preset.audioReactive) {
+                Object.assign(particleSystem.audioReactive, preset.audioReactive);
+                elements.audioEmission.value = preset.audioReactive.emissionMultiplier;
+                elements.audioSize.value = preset.audioReactive.sizeMultiplier;
+                elements.audioVelocity.value = preset.audioReactive.velocityMultiplier;
+            }
+
+            // Apply renderer settings
+            if (preset.renderer) {
+                renderer.setBlendMode(preset.renderer.blendMode);
+                renderer.setColorPalette(preset.renderer.colorPalette);
+                renderer.params.particleShape = preset.renderer.particleShape;
+                renderer.params.backgroundAlpha = preset.renderer.backgroundAlpha;
+                renderer.params.glowIntensity = preset.renderer.glowIntensity;
+
+                elements.blendMode.value = preset.renderer.blendMode;
+                elements.colorPalette.value = preset.renderer.colorPalette;
+                elements.particleShape.value = preset.renderer.particleShape;
+                elements.trailIntensity.value = 1 - preset.renderer.backgroundAlpha;
+                elements.glowIntensity.value = preset.renderer.glowIntensity;
+            }
+
+            console.log('Preset applied successfully');
+        }
+
+        // Main animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Analyze audio
+            audioEngine.analyze();
+
+            // Get audio data
+            const audioBands = audioEngine.getBandsArray();
+            const overallEnergy = audioEngine.getOverallEnergy();
+
+            // Emit particles
+            particleSystem.emit(particleSystem.emission.rate, overallEnergy);
+
+            // Update particles
+            particleSystem.update(1, audioBands);
+
+            // Render
+            renderer.render(particleSystem);
+
+            // Draw overlays if stats are visible
+            if (elements.stats.classList.contains('visible')) {
+                renderer.drawStats(particleSystem, 10, 30);
+                renderer.drawAudioBars(audioBands, 10, canvas.height - 130, 200, 100);
+                renderer.drawKickIndicator(audioEngine.kickValue, 220, canvas.height - 60, 30);
+            }
+
+            // Update stats display
+            updateStats();
+        }
+
+        function updateStats() {
+            const stats = particleSystem.getStats();
+            const rendererStats = renderer.getStats();
+
+            document.getElementById('statsContent').innerHTML = `
+                FPS: ${rendererStats.fps}<br>
+                Frame Time: ${rendererStats.frameTime.toFixed(2)}ms<br>
+                Audio Latency: ${audioEngine.latency.toFixed(2)}ms<br>
+                Active Particles: ${stats.activeParticles}/${stats.maxParticles}<br>
+                Draw Calls: ${rendererStats.drawCalls}<br>
+                Physics: ${particleSystem.physics.mode}<br>
+                Audio: ${audioEngine.isPlaying ? 'Playing' : 'Stopped'}
+            `;
+        }
+
+        // Start animation loop
+        animate();
+
+        // Initialize status indicators
+        elements.audioStatus.classList.remove('active');
+        elements.midiStatus.classList.remove('active');
+
+        console.log('🎨 Audio-Reactive Particle System initialized');
+        console.log('👉 Click "Start Microphone" or load an audio file to begin');
+        console.log('🎹 Initialize MIDI to connect your MIDI controller');
+    </script>
+</body>
+</html>

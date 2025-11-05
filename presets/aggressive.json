@@ -1,0 +1,50 @@
+{
+  "name": "Aggressive",
+  "description": "High-energy settings for intense music with strong audio reactivity",
+  "emission": {
+    "rate": 35,
+    "x": 0.5,
+    "y": 0.5,
+    "spread": 0.4,
+    "velocityMin": 3,
+    "velocityMax": 8,
+    "sizeMin": 3,
+    "sizeMax": 12,
+    "lifeMin": 80,
+    "lifeMax": 150,
+    "hue": 0,
+    "hueVariation": 40
+  },
+  "physics": {
+    "mode": "turbulence",
+    "gravity": 0.05,
+    "gravityX": 0,
+    "gravityY": 0.05,
+    "magnetismStrength": 1.5,
+    "magnetX": 960,
+    "magnetY": 540,
+    "turbulenceStrength": 0.8,
+    "turbulenceFrequency": 0.03,
+    "orbitalCenterX": 0.5,
+    "orbitalCenterY": 0.5,
+    "orbitalStrength": 0.6,
+    "damping": 0.97,
+    "bounceEnabled": false,
+    "wrapEnabled": true
+  },
+  "audioReactive": {
+    "emissionMultiplier": 3.5,
+    "sizeMultiplier": 2.0,
+    "velocityMultiplier": 2.5,
+    "hueShift": 0
+  },
+  "renderer": {
+    "blendMode": "add",
+    "colorPalette": "fire",
+    "particleShape": "glow",
+    "backgroundAlpha": 0.05,
+    "glowIntensity": 4,
+    "enableGlow": true,
+    "enableTrails": true
+  }
+}

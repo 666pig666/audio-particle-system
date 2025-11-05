@@ -1,0 +1,50 @@
+{
+  "name": "Ambient",
+  "description": "Subtle, calming settings for ambient and downtempo music",
+  "emission": {
+    "rate": 5,
+    "x": 0.5,
+    "y": 0.5,
+    "spread": 0.1,
+    "velocityMin": 0.3,
+    "velocityMax": 1.2,
+    "sizeMin": 1,
+    "sizeMax": 4,
+    "lifeMin": 200,
+    "lifeMax": 400,
+    "hue": 180,
+    "hueVariation": 40
+  },
+  "physics": {
+    "mode": "orbital",
+    "gravity": 0.02,
+    "gravityX": 0,
+    "gravityY": 0.02,
+    "magnetismStrength": 0.3,
+    "magnetX": 960,
+    "magnetY": 540,
+    "turbulenceStrength": 0.15,
+    "turbulenceFrequency": 0.005,
+    "orbitalCenterX": 0.5,
+    "orbitalCenterY": 0.5,
+    "orbitalStrength": 0.15,
+    "damping": 0.995,
+    "bounceEnabled": false,
+    "wrapEnabled": true
+  },
+  "audioReactive": {
+    "emissionMultiplier": 0.5,
+    "sizeMultiplier": 0.6,
+    "velocityMultiplier": 0.4,
+    "hueShift": 0
+  },
+  "renderer": {
+    "blendMode": "screen",
+    "colorPalette": "ice",
+    "particleShape": "circle",
+    "backgroundAlpha": 0.02,
+    "glowIntensity": 1.5,
+    "enableGlow": true,
+    "enableTrails": true
+  }
+}
