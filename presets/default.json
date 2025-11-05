@@ -1,0 +1,50 @@
+{
+  "name": "Default",
+  "description": "Balanced settings for general audio visualization",
+  "emission": {
+    "rate": 10,
+    "x": 0.5,
+    "y": 0.5,
+    "spread": 0.2,
+    "velocityMin": 1,
+    "velocityMax": 3,
+    "sizeMin": 2,
+    "sizeMax": 6,
+    "lifeMin": 100,
+    "lifeMax": 200,
+    "hue": 200,
+    "hueVariation": 60
+  },
+  "physics": {
+    "mode": "gravity",
+    "gravity": 0.1,
+    "gravityX": 0,
+    "gravityY": 0.1,
+    "magnetismStrength": 0.5,
+    "magnetX": 960,
+    "magnetY": 540,
+    "turbulenceStrength": 0.3,
+    "turbulenceFrequency": 0.01,
+    "orbitalCenterX": 0.5,
+    "orbitalCenterY": 0.5,
+    "orbitalStrength": 0.2,
+    "damping": 0.99,
+    "bounceEnabled": false,
+    "wrapEnabled": true
+  },
+  "audioReactive": {
+    "emissionMultiplier": 1.0,
+    "sizeMultiplier": 1.0,
+    "velocityMultiplier": 1.0,
+    "hueShift": 0
+  },
+  "renderer": {
+    "blendMode": "screen",
+    "colorPalette": "rainbow",
+    "particleShape": "circle",
+    "backgroundAlpha": 0.1,
+    "glowIntensity": 2,
+    "enableGlow": true,
+    "enableTrails": true
+  }
+}
